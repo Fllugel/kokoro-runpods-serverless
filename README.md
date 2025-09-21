@@ -28,7 +28,7 @@ Convert the proven `ghcr.io/remsky/kokoro-fastapi-gpu:latest` pod to RunPod serv
    ```
 3. **Enable GitHub Actions**: Settings → Actions → General → "Read and write permissions" → Save
 4. **Run workflow**: Actions tab → "Build and Push Docker Image" → "Run workflow"
-5. **Get your image**: `ghcr.io/YOUR_USERNAME/kokoro-fastapi-serverless:latest`
+5. **Get your image**: `ghcr.io/arkodeepsen/kokoro-fastapi-serverless:latest`
 
 ### **Step 2: Create RunPod Template**
 
@@ -36,7 +36,7 @@ Convert the proven `ghcr.io/remsky/kokoro-fastapi-gpu:latest` pod to RunPod serv
 2. **Configure**:
    ```
    Template Name: Kokoro FastAPI Serverless
-   Container Image: ghcr.io/YOUR_USERNAME/kokoro-fastapi-serverless:latest
+   Container Image: ghcr.io/arkodeepsen/kokoro-fastapi-serverless:latest
    Container Disk: 20 GB
    Environment Variables:
      USE_GPU = true
@@ -223,7 +223,7 @@ python test-wrapper.py
 ## 🔍 **Troubleshooting**
 
 ### **"Image pull failed"**
-- ✅ Check image URL: `ghcr.io/YOUR_USERNAME/kokoro-fastapi-serverless:latest`
+- ✅ Check image URL: `ghcr.io/arkodeepsen/kokoro-fastapi-serverless:latest`
 - ✅ Ensure GitHub Actions build completed successfully
 - ✅ Verify image is public in GitHub Packages
 

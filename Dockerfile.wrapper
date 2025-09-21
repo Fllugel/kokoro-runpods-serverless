@@ -10,12 +10,12 @@ RUN pip install runpod>=1.0.0
 # Copy the serverless handler
 COPY handler-wrapper.py /app/handler.py
 
-# Copy startup script
-COPY start-serverless.sh /app/start-serverless.sh
-RUN chmod +x /app/start-serverless.sh
-
 # Switch back to appuser
 USER appuser
 
-# Use the serverless startup script instead of the original entrypoint
-CMD ["/app/start-serverless.sh"]
+# Set environment variables for the wrapper
+ENV PYTHONPATH=/app:/app/api
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Run the serverless handler directly
+CMD ["python", "/app/handler.py"]

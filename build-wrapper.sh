@@ -4,7 +4,7 @@
 set -e
 
 # Configuration - CHANGE THESE TO YOUR VALUES
-GITHUB_USERNAME="${GITHUB_USERNAME:-YOUR_USERNAME}"
+GITHUB_USERNAME="${GITHUB_USERNAME:-arkodeepsen}"
 IMAGE_NAME="kokoro-fastapi-serverless"
 REGISTRY="ghcr.io/${GITHUB_USERNAME}"
 TAG="${1:-latest}"
@@ -13,13 +13,7 @@ echo "Building ${IMAGE_NAME}:${TAG} (wrapper approach)..."
 echo "Base image: ghcr.io/remsky/kokoro-fastapi-gpu:latest"
 echo "Target registry: ${REGISTRY}"
 
-# Check if username is set
-if [ "${GITHUB_USERNAME}" = "YOUR_USERNAME" ]; then
-    echo "❌ Please set your GitHub username:"
-    echo "   export GITHUB_USERNAME=your-github-username"
-    echo "   OR edit this script to replace YOUR_USERNAME"
-    exit 1
-fi
+# Username is set to arkodeepsen - ready to build!
 
 # Build the wrapper Docker image
 docker build \

@@ -1,7 +1,7 @@
 {
   "name": "Kokoro FastAPI Serverless Wrapper",
   "description": "Serverless wrapper for the proven Kokoro FastAPI image - seamless RunPod compatibility",
-  "imageUri": "ghcr.io/YOUR_USERNAME/kokoro-fastapi-serverless:latest",
+  "imageUri": "ghcr.io/arkodeepsen/kokoro-fastapi-serverless:latest",
   "dockerArgs": "",
   "containerDiskInGb": 20,
   "volumeInGb": 0,
