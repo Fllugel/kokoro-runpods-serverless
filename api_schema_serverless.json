@@ -1,0 +1,557 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Kokoro FastAPI Serverless Wrapper API",
+    "description": "RunPod serverless wrapper for Kokoro TTS - supports all original endpoints through unified handler",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.runpod.ai/v2/{endpoint_id}",
+      "description": "RunPod Serverless Endpoint",
+      "variables": {
+        "endpoint_id": {
+          "description": "Your RunPod endpoint ID",
+          "default": "YOUR_ENDPOINT_ID"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/runsync": {
+      "post": {
+        "summary": "Synchronous Request Handler",
+        "description": "Main endpoint that handles all Kokoro FastAPI functionality through RunPod serverless",
+        "operationId": "runsync_handler",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServerlessRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TTSResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/VoicesResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ModelsResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PhonemeResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/CaptionedSpeechResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/VoiceCombineResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run": {
+      "post": {
+        "summary": "Asynchronous Request Handler",
+        "description": "Asynchronous version - same functionality as /runsync but returns job ID for later retrieval",
+        "operationId": "run_handler",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServerlessRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Job submitted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Job ID for retrieving results"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["IN_QUEUE", "IN_PROGRESS"]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "RunPod API Key"
+      }
+    },
+    "schemas": {
+      "ServerlessRequest": {
+        "type": "object",
+        "required": ["input"],
+        "properties": {
+          "input": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TTSInput"
+              },
+              {
+                "$ref": "#/components/schemas/EndpointInput"
+              }
+            ]
+          }
+        }
+      },
+      "TTSInput": {
+        "type": "object",
+        "description": "Text-to-Speech input (default endpoint)",
+        "properties": {
+          "input": {
+            "type": "string",
+            "description": "Text to synthesize (OpenAI format)"
+          },
+          "text": {
+            "type": "string",
+            "description": "Text to synthesize (simple format)"
+          },
+          "model": {
+            "type": "string",
+            "default": "kokoro",
+            "description": "Model to use"
+          },
+          "voice": {
+            "type": "string",
+            "default": "af_bella",
+            "description": "Voice name or combination (e.g., 'af_bella+af_sky')"
+          },
+          "response_format": {
+            "type": "string",
+            "enum": ["mp3", "wav", "opus", "flac", "pcm"],
+            "default": "mp3",
+            "description": "Audio format"
+          },
+          "format": {
+            "type": "string",
+            "enum": ["mp3", "wav", "opus", "flac", "pcm"],
+            "default": "mp3",
+            "description": "Audio format (simple format alias)"
+          },
+          "speed": {
+            "type": "number",
+            "minimum": 0.25,
+            "maximum": 4.0,
+            "default": 1.0,
+            "description": "Speech speed multiplier"
+          },
+          "stream": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable streaming"
+          },
+          "return_download_link": {
+            "type": "boolean",
+            "default": false,
+            "description": "Return download link"
+          },
+          "lang_code": {
+            "type": "string",
+            "description": "Language code"
+          },
+          "normalization_options": {
+            "$ref": "#/components/schemas/NormalizationOptions"
+          }
+        },
+        "oneOf": [
+          {
+            "required": ["input"]
+          },
+          {
+            "required": ["text"]
+          }
+        ]
+      },
+      "EndpointInput": {
+        "type": "object",
+        "description": "Specific endpoint input",
+        "required": ["endpoint", "method"],
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "enum": [
+              "/v1/audio/voices",
+              "/v1/models",
+              "/dev/phonemize",
+              "/dev/captioned_speech",
+              "/dev/generate_from_phonemes",
+              "/v1/audio/voices/combine"
+            ],
+            "description": "Target endpoint"
+          },
+          "method": {
+            "type": "string",
+            "enum": ["GET", "POST"],
+            "description": "HTTP method"
+          },
+          "text": {
+            "type": "string",
+            "description": "Text input for phonemize endpoint"
+          },
+          "language": {
+            "type": "string",
+            "default": "a",
+            "description": "Language code for phonemize"
+          },
+          "input": {
+            "type": "string",
+            "description": "Text input for captioned speech"
+          },
+          "voice": {
+            "type": "string",
+            "description": "Voice name"
+          },
+          "response_format": {
+            "type": "string",
+            "enum": ["mp3", "wav", "opus", "flac"],
+            "description": "Audio format for captioned speech"
+          },
+          "return_timestamps": {
+            "type": "boolean",
+            "description": "Return word timestamps"
+          },
+          "phonemes": {
+            "type": "string",
+            "description": "Phonemes for generation"
+          },
+          "voices": {
+            "type": "string",
+            "description": "Voice combination string (e.g., 'af_bella+af_sky')"
+          }
+        }
+      },
+      "NormalizationOptions": {
+        "type": "object",
+        "properties": {
+          "normalize": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable text normalization"
+          },
+          "unit_normalization": {
+            "type": "boolean",
+            "default": false,
+            "description": "Transform units (10KB → 10 kilobytes)"
+          },
+          "url_normalization": {
+            "type": "boolean",
+            "default": true,
+            "description": "Normalize URLs for pronunciation"
+          },
+          "email_normalization": {
+            "type": "boolean",
+            "default": true,
+            "description": "Normalize emails for pronunciation"
+          },
+          "optional_pluralization_normalization": {
+            "type": "boolean",
+            "default": true,
+            "description": "Replace (s) with s"
+          },
+          "phone_normalization": {
+            "type": "boolean",
+            "default": true,
+            "description": "Normalize phone numbers"
+          }
+        }
+      },
+      "TTSResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "audio_base64": {
+            "type": "string",
+            "description": "Base64-encoded audio data"
+          },
+          "text": {
+            "type": "string",
+            "description": "Input text that was synthesized"
+          },
+          "voice": {
+            "type": "string",
+            "description": "Voice used for synthesis"
+          },
+          "speed": {
+            "type": "number",
+            "description": "Speed multiplier used"
+          },
+          "format": {
+            "type": "string",
+            "description": "Audio format"
+          },
+          "model": {
+            "type": "string",
+            "description": "Model used"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "description": "Size of audio data in bytes"
+          }
+        }
+      },
+      "VoicesResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "voices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of available voice names"
+          }
+        }
+      },
+      "ModelsResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "models": {
+            "type": "object",
+            "description": "Available models information"
+          }
+        }
+      },
+      "PhonemeResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "result": {
+            "type": "object",
+            "properties": {
+              "phonemes": {
+                "type": "string",
+                "description": "Phonetic representation"
+              },
+              "tokens": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                },
+                "description": "Token IDs"
+              }
+            }
+          }
+        }
+      },
+      "CaptionedSpeechResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "result": {
+            "type": "object",
+            "properties": {
+              "audio": {
+                "type": "string",
+                "description": "Base64-encoded audio"
+              },
+              "timestamps": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "word": {
+                      "type": "string"
+                    },
+                    "start_time": {
+                      "type": "number"
+                    },
+                    "end_time": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "description": "Word-level timestamps"
+              }
+            }
+          }
+        }
+      },
+      "VoiceCombineResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "voice_file_base64": {
+            "type": "string",
+            "description": "Base64-encoded voice combination file (.pt)"
+          },
+          "voices": {
+            "type": "string",
+            "description": "Combined voice specification"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "description": "Size of voice file in bytes"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message"
+          }
+        }
+      }
+    }
+  },
+  "examples": {
+    "basic_tts": {
+      "summary": "Basic Text-to-Speech",
+      "value": {
+        "input": {
+          "text": "Hello, this is a test of Kokoro TTS!",
+          "voice": "af_bella",
+          "format": "mp3"
+        }
+      }
+    },
+    "openai_format": {
+      "summary": "OpenAI-Compatible Format",
+      "value": {
+        "input": {
+          "model": "kokoro",
+          "input": "Hello world!",
+          "voice": "af_bella",
+          "response_format": "mp3",
+          "speed": 1.0
+        }
+      }
+    },
+    "voice_combination": {
+      "summary": "Voice Combination",
+      "value": {
+        "input": {
+          "text": "Testing voice combinations",
+          "voice": "af_bella+af_sky",
+          "format": "mp3"
+        }
+      }
+    },
+    "list_voices": {
+      "summary": "List Available Voices",
+      "value": {
+        "input": {
+          "endpoint": "/v1/audio/voices",
+          "method": "GET"
+        }
+      }
+    },
+    "captioned_speech": {
+      "summary": "Speech with Timestamps",
+      "value": {
+        "input": {
+          "endpoint": "/dev/captioned_speech",
+          "method": "POST",
+          "input": "This will include word-level timestamps",
+          "voice": "af_bella",
+          "return_timestamps": true
+        }
+      }
+    },
+    "phonemize": {
+      "summary": "Text to Phonemes",
+      "value": {
+        "input": {
+          "endpoint": "/dev/phonemize",
+          "method": "POST",
+          "text": "Hello world",
+          "language": "a"
+        }
+      }
+    }
+  }
+}

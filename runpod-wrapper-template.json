@@ -1,0 +1,35 @@
+{
+  "name": "Kokoro FastAPI Serverless Wrapper",
+  "description": "Serverless wrapper for the proven Kokoro FastAPI image - seamless RunPod compatibility",
+  "imageUri": "ghcr.io/YOUR_USERNAME/kokoro-fastapi-serverless:latest",
+  "dockerArgs": "",
+  "containerDiskInGb": 20,
+  "volumeInGb": 0,
+  "volumeMountPath": "",
+  "ports": "",
+  "env": [
+    {
+      "key": "USE_GPU",
+      "value": "true"
+    },
+    {
+      "key": "DEVICE",
+      "value": "gpu"
+    },
+    {
+      "key": "DOWNLOAD_MODEL",
+      "value": "true"
+    }
+  ],
+  "secrets": [],
+  "startJupyter": false,
+  "startSsh": false,
+  "readme": "# Kokoro FastAPI Serverless Wrapper\n\n**Lightweight wrapper** that uses the proven `ghcr.io/remsky/kokoro-fastapi-gpu:latest` image and adds RunPod serverless compatibility.\n\n## How it works:\n1. Starts your existing FastAPI internally on port 8880\n2. Proxies RunPod requests to FastAPI endpoints\n3. Converts responses back to RunPod format\n\n## Usage (OpenAI-compatible):\n\n```json\n{\n  \"input\": {\n    \"model\": \"kokoro\",\n    \"input\": \"Your text here\",\n    \"voice\": \"af_bella\",\n    \"response_format\": \"mp3\",\n    \"speed\": 1.0\n  }\n}\n```\n\n## Advantages:\n✓ Uses proven working pod image\n✓ Zero code changes to FastAPI\n✓ All existing features preserved\n✓ Voice combinations work: \"af_bella+af_sky\"\n✓ All formats: mp3, wav, opus, flac\n✓ Lightweight: only +5MB overhead",
+  "advancedConfig": {
+    "idleTimeout": 5,
+    "maxWorkers": 3,
+    "gpuCount": 1,
+    "memoryInGb": 8,
+    "cpuCount": 2
+  }
+}
