@@ -16,6 +16,13 @@ RUN echo "--- Environment Check ---" && \
     echo "-------------------------"
 
 # Install runpod using the detected python
+# Install system dependencies (git is often needed)
+RUN apt-get update && apt-get install -y git curl && rm -rf /var/lib/apt/lists/*
+
+# Ensure pip is installed in the current python environment (venv)
+# Try ensurepip first, fallback to get-pip.py
+RUN python -m ensurepip --upgrade || (curl -sS https://bootstrap.pypa.io/get-pip.py | python)
+
 # Install runpod using the detected python, bypassing PEP 668 if needed
 RUN python -m pip install runpod>=1.0.0 --break-system-packages || python -m pip install runpod>=1.0.0
 
