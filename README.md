@@ -257,5 +257,8 @@ The network volume:
 ## License
 This project is licensed under the Apache 2.0 License. The Kokoro model itself is Apache 2.0.
 
+## Credits
+This project is a serverless wrapper around the excellent [Kokoro-FastAPI](https://github.com/remsky/Kokoro-FastAPI) by [remsky](https://github.com/remsky). It uses the official `ghcr.io/remsky/kokoro-fastapi-gpu` Docker image as its base.
+
 ## Support
 For issues or questions about this RunPod template, please open an issue on the GitHub repository.
