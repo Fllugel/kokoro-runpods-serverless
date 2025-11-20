@@ -20,10 +20,11 @@ Convert the proven `ghcr.io/remsky/kokoro-fastapi-gpu:latest` pod to RunPod serv
 1. **Create GitHub repository** (e.g., `kokoro-serverless`)
 2. **Upload these files** to your repo:
    ```
-   ├── Dockerfile.wrapper
+   ├── Dockerfile
    ├── handler-wrapper.py
-   ├── .github/workflows/build.yml
-   ├── runpod-wrapper-template.json
+   ├── runpod.toml
+   ├── app.py
+   ├── inference.py
    └── README.md
    ```
 3. **Enable GitHub Actions**: Settings → Actions → General → "Read and write permissions" → Save
@@ -209,12 +210,12 @@ python test-wrapper.py
 
 | File | Purpose |
 |------|---------|
-| `Dockerfile.wrapper` | Lightweight wrapper using proven base image |
+| `Dockerfile` | Lightweight wrapper using proven base image |
 | `handler-wrapper.py` | Complete handler supporting all endpoints |
-| `.github/workflows/build.yml` | GitHub Actions for automatic builds |
-| `build-wrapper.sh` | Local build script (optional) |
-| `test-wrapper.py` | Comprehensive test suite |
-| `runpod-wrapper-template.json` | RunPod template configuration |
+| `app.py` | Streamlit Client UI for full interaction |
+| `inference.py` | CLI Client for quick testing |
+| `build-wrapper.sh` | Local build script |
+| `runpod.toml` | RunPod template configuration |
 | `api_schema_serverless.json` | Complete API documentation |
 | `.gitignore` | Git ignore patterns |
 

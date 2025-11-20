@@ -34,15 +34,53 @@ def generate_srt(timestamps):
     return srt_content
 
 def make_request(url, api_key, payload):
-    """Make request to RunPod endpoint"""
+    """Make request to RunPod endpoint and poll if necessary"""
     headers = {"Content-Type": "application/json"}
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
     
     try:
-        response = requests.post(url, json=payload, headers=headers, timeout=300)
-        response.raise_for_status()
-        return response.json()
+        # Initial Request
+        with st.spinner("Sending request..."):
+            response = requests.post(url, json=payload, headers=headers, timeout=300)
+            response.raise_for_status()
+            data = response.json()
+
+        # Check if we need to poll
+        if data.get("status") in ["IN_QUEUE", "IN_PROGRESS"]:
+            job_id = data.get("id")
+            if not job_id:
+                return data
+            
+            # Construct status URL
+            # Assumes URL format: https://api.runpod.ai/v2/{endpoint_id}/runsync
+            # Status URL: https://api.runpod.ai/v2/{endpoint_id}/status/{job_id}
+            base_url = url.rsplit('/', 1)[0]
+            status_url = f"{base_url}/status/{job_id}"
+            
+            status_container = st.empty()
+            start_time = time.time()
+            
+            while True:
+                # Poll status
+                status_res = requests.get(status_url, headers=headers, timeout=30)
+                status_res.raise_for_status()
+                status_data = status_res.json()
+                
+                status = status_data.get("status")
+                status_container.info(f"Job Status: {status} (Time: {int(time.time() - start_time)}s)")
+                
+                if status == "COMPLETED":
+                    status_container.empty()
+                    return status_data
+                elif status == "FAILED":
+                    status_container.error(f"Job Failed: {status_data}")
+                    return status_data
+                
+                time.sleep(2)
+        
+        return data
+
     except requests.exceptions.RequestException as e:
         st.error(f"Request failed: {e}")
         if hasattr(e, 'response') and e.response:

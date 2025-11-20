@@ -9,6 +9,8 @@ import json
 import subprocess
 import time
 import threading
+import os
+import sys
 from typing import Dict, Any
 
 import requests
@@ -27,11 +29,44 @@ def start_fastapi():
     logger.info("Starting internal FastAPI server...")
 
     # Start the FastAPI server using the existing startup method
+    # Try entrypoint.sh first, then fallback to direct uvicorn
+    method = "entrypoint"
+    try:
+        if os.path.exists("/app/entrypoint.sh"):
+            logger.info("Found /app/entrypoint.sh, attempting to execute...")
+            # Make sure it's executable
+            os.chmod("/app/entrypoint.sh", 0o755)
+            fastapi_process = subprocess.Popen(
+                ["/app/entrypoint.sh"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+        else:
+            raise FileNotFoundError
+    except (FileNotFoundError, PermissionError):
+        method = "direct_uvicorn"
+        logger.info("entrypoint.sh not found or failed, falling back to direct uvicorn...")
+        fastapi_process = subprocess.Popen([
+            sys.executable, "-m", "uvicorn",
+            "api.src.main:app",
+            "--host", "0.0.0.0",
+            "--port", "8880"
+        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, cwd="/app")
+
     # Wait for the server to be ready
-    max_wait = 120  # 2 minutes max wait
+    max_wait = 300  # 5 minutes max wait for model download
     start_time = time.time()
 
     while time.time() - start_time < max_wait:
+        # Check if process is still running
+        if fastapi_process.poll() is not None:
+            logger.error(f"FastAPI process exited unexpectedly with code {fastapi_process.returncode}")
+            stdout, stderr = fastapi_process.communicate()
+            logger.error(f"STDOUT: {stdout}")
+            logger.error(f"STDERR: {stderr}")
+            raise RuntimeError(f"FastAPI server crashed on startup ({method})")
+
         try:
             response = requests.get(f"{FASTAPI_URL}/health", timeout=5)
             if response.status_code == 200:
@@ -44,11 +79,19 @@ def start_fastapi():
         time.sleep(2)
 
     logger.error("FastAPI server failed to start within timeout")
+    # If we timed out, print the logs anyway to see what's happening
+    if fastapi_process:
+        logger.info("Dumping process logs due to timeout...")
+        fastapi_process.kill()
+        stdout, stderr = fastapi_process.communicate()
+        logger.info(f"STDOUT: {stdout}")
+        logger.info(f"STDERR: {stderr}")
+        
     raise RuntimeError("FastAPI server startup timeout")
 
 def wait_for_fastapi():
     """Wait for FastAPI to be ready"""
-    max_wait = 180  # 3 minutes
+    max_wait = 300  # 5 minutes
     start_time = time.time()
 
     while not fastapi_ready and time.time() - start_time < max_wait:

@@ -1,0 +1,22 @@
+[runpod]
+# RunPod Hub Template Configuration
+# Kokoro FastAPI Serverless - High-quality TTS with Voice Mixing
+
+name = "kokoro-fastapi-serverless"
+dockerfile = "Dockerfile"
+
+# GPU Requirements (4GB VRAM minimum, 8GB recommended)
+gpu_types = ["NVIDIA RTX 4000 SFF Ada", "NVIDIA RTX 4000 Ada Generation", "NVIDIA L4", "NVIDIA L40", "NVIDIA L40S", "NVIDIA A40", "NVIDIA RTX A4000", "NVIDIA RTX A4500", "NVIDIA RTX A5000", "NVIDIA RTX A6000", "NVIDIA RTX 6000 Ada Generation", "NVIDIA A100 80GB PCIe", "NVIDIA H100 PCIe", "NVIDIA H100 NVL"]
+min_vram_gb = 8
+
+# Storage Configuration
+container_disk_gb = 10   # Code and dependencies
+volume_gb = 20           # Model cache (persistent across workers)
+
+# Execution Settings
+execution_timeout = 300  # 5 minutes per job
+
+# Auto-scaling Configuration
+min_workers = 0          # Scale to zero when idle
+max_workers = 5          # Maximum concurrent workers
+scale_down_delay = 60    # Seconds before scaling down
