@@ -1,282 +1,151 @@
-# 🚀 Kokoro FastAPI Serverless Wrapper
+# Kokoro Serverless
 
-Convert the proven `ghcr.io/remsky/kokoro-fastapi-gpu:latest` pod to RunPod serverless with **zero code changes** and **100% API compatibility**.
+<div align="center">
 
-## ✅ **What This Provides**
+![Kokoro Serverless](https://img.shields.io/badge/Kokoro-Serverless-blue?style=for-the-badge&logo=python)
+![RunPod](https://img.shields.io/badge/RunPod-Serverless-purple?style=for-the-badge&logo=runpod)
+![License](https://img.shields.io/badge/License-Apache%202.0-green?style=for-the-badge)
 
-🎯 **100% API compatibility** - Every endpoint from your pod works identically
-🔧 **Zero risk** - Uses your proven working image internally
-⚡ **All features** - Voice combinations, timestamps, phonemization, everything
-💰 **Pay-per-use** instead of constant pod costs
-📦 **Lightweight wrapper** - Only adds ~5MB RunPod handler
-🔄 **Simple migration** - Wrap existing requests in `"input"`, decode base64 responses
+**High-Quality Text-to-Speech with Voice Mixing & Phonemes**
 
----
+[Features](#features) • [API Usage](#api-usage) • [Deployment](#deployment) • [Clients](#clients)
 
-## 🚀 **Quick Deploy (3 Steps)**
-
-### **Step 1: Upload to GitHub (No Local Docker Required)**
-
-1. **Create GitHub repository** (e.g., `kokoro-serverless`)
-2. **Upload these files** to your repo:
-   ```
-   ├── Dockerfile
-   ├── handler-wrapper.py
-   ├── runpod.toml
-   ├── app.py
-   ├── inference.py
-   └── README.md
-   ```
-3. **Enable GitHub Actions**: Settings → Actions → General → "Read and write permissions" → Save
-4. **Run workflow**: Actions tab → "Build and Push Docker Image" → "Run workflow"
-5. **Get your image**: `ghcr.io/arkodeepsen/kokoro-fastapi-serverless:latest`
-
-### **Step 2: Create RunPod Template**
-
-1. **Login to RunPod** → Serverless → Templates → "New Template"
-2. **Configure**:
-   ```
-   Template Name: Kokoro FastAPI Serverless
-   Container Image: ghcr.io/arkodeepsen/kokoro-fastapi-serverless:latest
-   Container Disk: 20 GB
-   Environment Variables:
-     USE_GPU = true
-     DEVICE = gpu
-   Advanced Settings:
-     GPU Count: 1
-     Memory: 8 GB
-     Idle Timeout: 5 seconds
-     Max Workers: 3
-   ```
-3. **Save Template**
-
-### **Step 3: Deploy Endpoint**
-
-1. **Serverless** → **Endpoints** → **"Create Endpoint"**
-2. **Select your template** → **Choose GPU type** (RTX 3080/4090 recommended)
-3. **Deploy** → Wait 2-3 minutes
-4. **Copy endpoint URL**: `https://api.runpod.ai/v2/YOUR_ENDPOINT_ID`
+</div>
 
 ---
 
-## 📡 **API Usage**
+## � Overview
 
-### **Migration from Pod to Serverless**
+**Kokoro Serverless** is a production-ready, serverless deployment of the Kokoro TTS model, optimized for RunPod. It provides an OpenAI-compatible API for high-quality text-to-speech generation, featuring advanced capabilities like voice mixing, word-level timestamps, and phoneme generation.
 
-**Your Current Pod Code:**
-```python
-import requests
+Built on top of `ghcr.io/remsky/kokoro-fastapi-gpu`, this serverless wrapper ensures **zero cold-start latency** for model loading (via volume caching) and **100% API compatibility** with the original project.
 
-# Pod request
-response = requests.post("http://your-pod:8880/v1/audio/speech", json={
+## ✨ Features
+
+- �️ **High-Quality TTS**: Generate natural-sounding speech in multiple languages.
+- 🎛️ **Voice Mixing**: Combine multiple voices (e.g., `af_bella+af_sky`) for unique outputs.
+- ⏱️ **Word Timestamps**: Get precise start/end times for every word (SRT generation).
+- 🔡 **Phonemization**: Convert text to phonemes for linguistic analysis.
+- ⚡ **Serverless Optimized**:
+  - **Fast Cold Starts**: Models cached to network volume.
+  - **Auto-Scaling**: Scales to zero when idle, up to N workers under load.
+  - **Cost-Efficient**: Pay only for the inference time you use.
+
+## 🚀 Deployment
+
+### One-Click Deploy (RunPod)
+
+1. **Clone this repository**.
+2. **Create a Network Volume** in RunPod (recommended 20GB) to cache models.
+3. **Create a Serverless Endpoint**:
+   - **Template**: Select this repository (or build your own template).
+   - **Container Image**: `ghcr.io/arkodeepsen/kokoro-fastapi-serverless:latest`
+   - **Environment Variables**:
+     - `HF_HOME`: `/runpod-volume`
+     - `TRANSFORMERS_CACHE`: `/runpod-volume`
+   - **GPU**: NVIDIA RTX 3090 / 4090 / A4000 or better recommended.
+
+## 📡 API Usage
+
+The endpoint exposes a single entry point `/runsync` (or `/run` for async) that accepts a JSON payload. All original Kokoro endpoints are supported by wrapping them in an `input` object.
+
+### 1. Standard Text-to-Speech
+**Endpoint**: `/runsync`
+
+```json
+{
+  "input": {
     "model": "kokoro",
-    "input": "Hello world!",
+    "input": "Hello world! This is Kokoro running on serverless.",
+    "voice": "af_bella",
+    "response_format": "mp3",
+    "speed": 1.0
+  }
+}
+```
+
+### 2. Voice Combination
+Mix two voices together by joining their IDs with `+`.
+
+```json
+{
+  "input": {
+    "model": "kokoro",
+    "input": "This is a mixed voice.",
     "voice": "af_bella+af_sky",
     "response_format": "mp3"
-})
-
-with open("output.mp3", "wb") as f:
-    f.write(response.content)
+  }
+}
 ```
 
-**New Serverless Code:**
-```python
-import requests
-import base64
+### 3. Captioned Speech (Timestamps)
+Generate audio along with word-level timestamps (perfect for subtitles).
 
-# Serverless request - just wrap your pod request in "input"
-response = requests.post("https://api.runpod.ai/v2/YOUR_ENDPOINT_ID/runsync",
-    headers={"Authorization": "Bearer YOUR_API_KEY"},
-    json={
-        "input": {  # <-- Only change: wrap existing request
-            "model": "kokoro",
-            "input": "Hello world!",
-            "voice": "af_bella+af_sky",
-            "response_format": "mp3"
-        }
-    }
-)
-
-result = response.json()
-audio_data = base64.b64decode(result["audio_base64"])  # <-- Decode base64
-with open("output.mp3", "wb") as f:
-    f.write(audio_data)
+```json
+{
+  "input": {
+    "endpoint": "/dev/captioned_speech",
+    "method": "POST",
+    "input": "Generate subtitles for this text.",
+    "voice": "af_bella",
+    "return_timestamps": true
+  }
+}
 ```
 
-### **All Supported Endpoints**
-
-#### 1. **Text-to-Speech (Default)**
-```python
-# OpenAI-compatible (recommended)
-{"input": {"model": "kokoro", "input": "Hello!", "voice": "af_bella", "response_format": "mp3"}}
-
-# Simple format
-{"input": {"text": "Hello!", "voice": "af_bella", "format": "mp3"}}
-
-# Voice combinations
-{"input": {"text": "Hello!", "voice": "af_bella+af_sky", "format": "mp3"}}
+**Response:**
+```json
+{
+  "audio": "base64_encoded_audio...",
+  "timestamps": [
+    {"word": "Generate", "start": 0.0, "end": 0.5},
+    {"word": "subtitles", "start": 0.5, "end": 1.2},
+    ...
+  ]
+}
 ```
 
-#### 2. **List Available Voices**
-```python
-{"input": {"endpoint": "/v1/audio/voices", "method": "GET"}}
+### 4. Text to Phonemes
+Convert text into its phonemic representation.
+
+```json
+{
+  "input": {
+    "endpoint": "/dev/phonemize",
+    "method": "POST",
+    "text": "Hello world",
+    "language": "a"
+  }
+}
 ```
 
-#### 3. **List Models**
-```python
-{"input": {"endpoint": "/v1/models", "method": "GET"}}
-```
+## � Clients
 
-#### 4. **Text to Phonemes**
-```python
-{"input": {"endpoint": "/dev/phonemize", "method": "POST", "text": "Hello world", "language": "a"}}
-```
+This repository includes two ready-to-use clients to interact with your endpoint.
 
-#### 5. **TTS with Word Timestamps**
-```python
-{"input": {"endpoint": "/dev/captioned_speech", "method": "POST", "input": "Hello!", "voice": "af_bella", "return_timestamps": true}}
-```
-
-#### 6. **Voice Combination**
-```python
-{"input": {"endpoint": "/v1/audio/voices/combine", "method": "POST", "voices": "af_bella+af_sky"}}
-```
-
-#### 7. **Generate from Phonemes**
-```python
-{"input": {"endpoint": "/dev/generate_from_phonemes", "method": "POST", "phonemes": "həˈloʊ wɜrld", "voice": "af_bella"}}
-```
-
----
-
-## 🧪 **Test Your Deployment**
-
-```python
-import requests
-import base64
-
-# Test basic TTS
-response = requests.post("https://api.runpod.ai/v2/YOUR_ENDPOINT_ID/runsync",
-    headers={"Authorization": "Bearer YOUR_API_KEY"},
-    json={"input": {"text": "Hello from serverless!", "voice": "af_bella"}}
-)
-
-result = response.json()
-print("Success:", result.get("success"))
-
-if result.get("success"):
-    # Save audio
-    audio_data = base64.b64decode(result["audio_base64"])
-    with open("test.mp3", "wb") as f:
-        f.write(audio_data)
-    print("Audio saved as test.mp3")
-else:
-    print("Error:", result.get("error"))
-```
-
----
-
-## 🔧 **Local Testing (Optional)**
+### Streamlit Web App (`app.py`)
+A full-featured GUI for generating audio, mixing voices, and creating SRT subtitles.
 
 ```bash
-# Build locally (requires Docker)
-export GITHUB_USERNAME=your-github-username
-./build-wrapper.sh
-
-# Test locally
-docker run --gpus all -p 8000:8000 kokoro-fastapi-serverless:latest
-
-# Run tests
-python test-wrapper.py
+pip install -r requirements.txt
+streamlit run app.py
 ```
 
----
+### CLI Tool (`inference.py`)
+A simple command-line tool for quick generations.
 
-## 📊 **Performance & Costs**
+```bash
+python inference.py --text "Hello there" --voice af_bella --output hello.mp3
+```
 
-| Metric | Pod (Always On) | Serverless |
-|--------|----------------|------------|
-| **Cold start** | N/A | 30-60s |
-| **Warm requests** | 1-5s | 1-5s |
-| **Idle costs** | $$$$ | $0 |
-| **Usage costs** | Fixed | Pay-per-use |
-| **Scaling** | Manual | Automatic |
+## ⚙️ Configuration
 
-**Cost savings:** ~60-90% for typical usage patterns
+| Environment Variable | Description | Default |
+|----------------------|-------------|---------|
+| `HF_HOME` | Path to HuggingFace cache (use network volume) | `/runpod-volume` |
+| `TRANSFORMERS_CACHE`| Path to Transformers cache | `/runpod-volume` |
+| `PYTHONUNBUFFERED` | Set to `1` for real-time logging | `1` |
 
----
+## 📜 License
 
-## 🛠️ **Files Overview**
-
-| File | Purpose |
-|------|---------|
-| `Dockerfile` | Lightweight wrapper using proven base image |
-| `handler-wrapper.py` | Complete handler supporting all endpoints |
-| `app.py` | Streamlit Client UI for full interaction |
-| `inference.py` | CLI Client for quick testing |
-| `build-wrapper.sh` | Local build script |
-| `runpod.toml` | RunPod template configuration |
-| `api_schema_serverless.json` | Complete API documentation |
-| `.gitignore` | Git ignore patterns |
-
----
-
-## 🔍 **Troubleshooting**
-
-### **"Image pull failed"**
-- ✅ Check image URL: `ghcr.io/arkodeepsen/kokoro-fastapi-serverless:latest`
-- ✅ Ensure GitHub Actions build completed successfully
-- ✅ Verify image is public in GitHub Packages
-
-### **"Out of memory"**
-- ✅ Increase memory to 8GB+ in RunPod template
-- ✅ Ensure GPU has 4GB+ VRAM
-
-### **"FastAPI server not ready"**
-- ✅ Increase serverless timeout settings
-- ✅ Check container logs in RunPod dashboard
-- ✅ Verify environment variables: `USE_GPU=true`, `DEVICE=gpu`
-
-### **"Request timeout"**
-- ✅ Large texts may exceed 5min limit
-- ✅ Consider breaking long texts into chunks
-- ✅ Use async endpoint (`/run`) for non-urgent requests
-
----
-
-## 🎯 **Key Differences: Pod vs Serverless**
-
-| Aspect | Pod | Serverless |
-|--------|-----|------------|
-| **Request format** | Direct FastAPI | Wrapped in `{"input": {...}}` |
-| **Response format** | Raw audio bytes | Base64-encoded JSON |
-| **Endpoints** | Multiple (`/v1/audio/speech`, `/v1/audio/voices`, etc.) | Single (`/runsync`, `/run`) |
-| **Authentication** | None/Custom | RunPod API key |
-| **Scaling** | Manual resize | Automatic 0→N |
-| **Pricing** | Fixed hourly | Pay-per-request |
-
----
-
-## ✅ **Success Checklist**
-
-- [ ] GitHub repo created with all files
-- [ ] GitHub Actions build completed successfully
-- [ ] RunPod template created with correct image
-- [ ] Environment variables set: `USE_GPU=true`, `DEVICE=gpu`
-- [ ] Serverless endpoint deployed
-- [ ] Basic TTS test works
-- [ ] Voice combinations work (`af_bella+af_sky`)
-- [ ] All endpoints tested (voices, models, timestamps, etc.)
-
----
-
-## 🎉 **You're Ready!**
-
-Your Kokoro FastAPI is now serverless with:
-- ✅ **100% compatibility** with your existing pod
-- ✅ **Pay-per-use pricing** (60-90% cost savings)
-- ✅ **Auto-scaling** from 0 to N instances
-- ✅ **All features preserved** (voice combinations, timestamps, phonemization)
-- ✅ **Zero maintenance** - no servers to manage
-
-**Happy serverless TTS! 🎵**
+This project is licensed under the Apache 2.0 License.
