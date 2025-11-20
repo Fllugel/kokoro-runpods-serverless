@@ -5,7 +5,8 @@ FROM ghcr.io/remsky/kokoro-fastapi-gpu:latest
 ENTRYPOINT []
 
 # Copy the serverless handler
-COPY handler-wrapper.py /app/handler.py
+# Copy the serverless handler
+COPY handler.py /app/handler.py
 
 # Switch to root to install runpod in the existing virtual environment
 USER root

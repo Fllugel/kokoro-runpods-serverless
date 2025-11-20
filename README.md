@@ -2,6 +2,8 @@
 
 <div align="center">
 
+[![Runpod](https://api.runpod.io/badge/arkodeepsen/kokoro)](https://console.runpod.io/hub/arkodeepsen/kokoro)
+
 ![Kokoro Serverless](https://img.shields.io/badge/Kokoro-Serverless-blue?style=for-the-badge&logo=python)
 ![RunPod](https://img.shields.io/badge/RunPod-Serverless-purple?style=for-the-badge&logo=runpod)
 ![License](https://img.shields.io/badge/License-Apache%202.0-green?style=for-the-badge)
@@ -22,7 +24,7 @@ Built on top of `ghcr.io/remsky/kokoro-fastapi-gpu`, this serverless wrapper ens
 
 ## ✨ Features
 
-- �️ **High-Quality TTS**: Generate natural-sounding speech in multiple languages.
+- ️ **High-Quality TTS**: Generate natural-sounding speech in multiple languages.
 - 🎛️ **Voice Mixing**: Combine multiple voices (e.g., `af_bella+af_sky`) for unique outputs.
 - ⏱️ **Word Timestamps**: Get precise start/end times for every word (SRT generation).
 - 🔡 **Phonemization**: Convert text to phonemes for linguistic analysis.
@@ -36,6 +38,15 @@ Built on top of `ghcr.io/remsky/kokoro-fastapi-gpu`, this serverless wrapper ens
 ### One-Click Deploy (RunPod)
 
 1. **Clone this repository**.
+2. **Upload these files** to your repo:
+   ```
+   ├── Dockerfile
+   ├── handler.py
+   ├── runpod.toml
+   ├── app.py
+   ├── inference.py
+   └── README.md
+   ```
 2. **Create a Network Volume** in RunPod (recommended 20GB) to cache models.
 3. **Create a Serverless Endpoint**:
    - **Template**: Select this repository (or build your own template).
@@ -140,11 +151,16 @@ python inference.py --text "Hello there" --voice af_bella --output hello.mp3
 
 ## ⚙️ Configuration
 
-| Environment Variable | Description | Default |
-|----------------------|-------------|---------|
-| `HF_HOME` | Path to HuggingFace cache (use network volume) | `/runpod-volume` |
-| `TRANSFORMERS_CACHE`| Path to Transformers cache | `/runpod-volume` |
-| `PYTHONUNBUFFERED` | Set to `1` for real-time logging | `1` |
+| File | Purpose |
+|----------------------|-------------|
+| `Dockerfile` | Lightweight wrapper using proven base image |
+| `handler.py` | Complete handler supporting all endpoints |
+| `app.py` | Streamlit Client UI for full interaction |
+| `inference.py` | CLI Client for quick testing |
+| `build.sh` | Local build script |
+| `runpod.toml` | RunPod template configuration |
+| `api_schema.json` | Complete API documentation |
+| `.gitignore` | Git ignore patterns |
 
 ## 📜 License
 
