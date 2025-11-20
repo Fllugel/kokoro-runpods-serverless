@@ -24,7 +24,13 @@ A production-ready RunPod serverless endpoint for Kokoro TTS - a high-quality, l
 
 ## API Usage
 
-### Input Format
+This serverless endpoint supports multiple operations through a single entry point. The operation is determined by the `endpoint` parameter in the input payload (defaults to standard TTS).
+
+### 1. Standard Text-to-Speech
+**Endpoint**: `/v1/audio/speech` (Default)
+
+Generate high-quality audio from text.
+
 ```json
 {
   "input": {
@@ -37,22 +43,129 @@ A production-ready RunPod serverless endpoint for Kokoro TTS - a high-quality, l
 }
 ```
 
-### Parameters
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `input` | string | **required** | Text to generate speech from |
-| `voice` | string | `af_bella` | Voice ID or combination (e.g., `af_bella+af_sky`) |
-| `speed` | float | `1.0` | Speech speed multiplier |
-| `response_format` | string | `mp3` | Audio format (`mp3`, `wav`, `pcm`) |
-| `model` | string | `kokoro` | Model identifier |
+### 2. Voice Combination
+**Endpoint**: `/v1/audio/voices/combine`
 
-### Output Format
+Mix two voices together to create a unique persona. Join voice IDs with `+`.
+
 ```json
 {
-  "audio_base64": "base64_encoded_audio_data...",
-  "text": "Hello world!...",
+  "input": {
+    "endpoint": "/v1/audio/voices/combine",
+    "method": "POST",
+    "voices": "af_bella+af_sky"
+  }
+}
+```
+*Returns a base64-encoded `.pt` file containing the combined voice style.*
+
+### 3. Captioned Speech (Timestamps/SRT)
+**Endpoint**: `/dev/captioned_speech`
+
+Generate audio along with word-level timestamps, perfect for creating subtitles (SRT).
+
+```json
+{
+  "input": {
+    "endpoint": "/dev/captioned_speech",
+    "method": "POST",
+    "input": "This text will have timestamps.",
+    "voice": "af_bella",
+    "return_timestamps": true,
+    "response_format": "mp3"
+  }
+}
+```
+*Returns `audio` (base64) and a `timestamps` array with start/end times for each word.*
+
+### 4. Text to Phonemes
+**Endpoint**: `/dev/phonemize`
+
+Convert text into its phonemic representation to see exactly how the model interprets pronunciation.
+
+```json
+{
+  "input": {
+    "endpoint": "/dev/phonemize",
+    "method": "POST",
+    "text": "Hello world",
+    "language": "a"
+  }
+}
+```
+*Returns the phonemes string.*
+
+### 5. Generate from Phonemes
+**Endpoint**: `/dev/generate_from_phonemes`
+
+Generate audio directly from raw phonemes.
+
+```json
+{
+  "input": {
+    "endpoint": "/dev/generate_from_phonemes",
+    "method": "POST",
+    "phonemes": "həˈloʊ wɜrld",
+    "voice": "af_bella"
+  }
+}
+```
+
+### 6. List Available Voices
+**Endpoint**: `/v1/audio/voices`
+
+Get a list of all available voice profiles.
+
+```json
+{
+  "input": {
+    "endpoint": "/v1/audio/voices",
+    "method": "GET"
+  }
+}
+```
+
+---
+
+### Parameters Reference
+
+#### Common Parameters (TTS)
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `input` | string | **required** | The text to generate speech from. |
+| `voice` | string | `af_bella` | Voice ID (e.g., `af_bella`, `af_sky`) or combination (`voice1+voice2`). |
+| `speed` | float | `1.0` | Speed multiplier (0.5 to 2.0). |
+| `response_format` | string | `mp3` | Audio format: `mp3`, `wav`, `pcm`. |
+| `model` | string | `kokoro` | Model identifier. |
+
+#### Advanced Parameters
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `endpoint` | string | `/v1/audio/speech` | The internal API route to target. |
+| `method` | string | `POST` | HTTP method (`GET` or `POST`). |
+| `return_timestamps`| boolean | `false` | For `/dev/captioned_speech`: include word-level timing data. |
+| `language` | string | `a` | For `/dev/phonemize`: language code (`a` for American English). |
+| `phonemes` | string | - | For `/dev/generate_from_phonemes`: raw phoneme string. |
+
+### Output Format
+All successful responses return a JSON object. Binary data (audio, files) is **Base64 encoded**.
+
+**Success Response:**
+```json
+{
+  "success": true,
+  "audio_base64": "SUQzBAAAAA...",  // Base64 encoded audio
+  "text": "Hello world...",
   "voice": "af_bella",
   "size_bytes": 123456
+}
+```
+
+**Error Response:**
+```json
+{
+  "success": false,
+  "error": "Error description here"
 }
 ```
 
