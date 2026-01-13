@@ -3,7 +3,8 @@
 # Kokoro FastAPI Serverless - High-quality TTS with Voice Mixing
 
 name = "kokoro-fastapi-serverless"
-dockerfile = "Dockerfile"
+# Use pre-built image from GitHub Container Registry instead of building locally
+image = "ghcr.io/fllugel/kokoro-runpods-serverless:latest"
 
 # GPU Requirements (4GB VRAM minimum, 8GB recommended)
 gpu_types = ["NVIDIA RTX 4000 SFF Ada", "NVIDIA RTX 4000 Ada Generation", "NVIDIA L4", "NVIDIA L40", "NVIDIA L40S", "NVIDIA A40", "NVIDIA RTX A4000", "NVIDIA RTX A4500", "NVIDIA RTX A5000", "NVIDIA RTX A6000", "NVIDIA RTX 6000 Ada Generation", "NVIDIA A100 80GB PCIe", "NVIDIA H100 PCIe", "NVIDIA H100 NVL"]
